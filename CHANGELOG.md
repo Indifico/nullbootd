@@ -1,4 +1,4 @@
-#Changelog
+# Changelog
 
 ## v0.0.1 Rre-release
 - Currently hardcoded to change the default to arch-linux
