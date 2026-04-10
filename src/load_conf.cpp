@@ -221,6 +221,7 @@ void Global_Config::shared_load_file()
                     handle_regex_setting(current_line);
                 }
                 file_loaded = true;
+                conf_file.close();
             }
             else
             {
@@ -306,6 +307,8 @@ void Global_Config::write()
                 << "editor " << editor << endl
                 << "auto-entries " << auto_entries << endl
                 << "beep " << beep << endl;
+
+            conf_out.close();
         }
         else
         {

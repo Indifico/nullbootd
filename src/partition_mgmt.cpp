@@ -99,4 +99,6 @@ void winpartition::unmount(std::string mount_point)
     const char* mountptr = mount_point.c_str();
     cout << "Unmount : " << mountptr << endl;
     DeleteVolumeMountPointA(mountptr);
+    filesystem::current_path("../../../");
+    filesystem::remove_all("./mnt");
 }

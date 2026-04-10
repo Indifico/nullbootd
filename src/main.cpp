@@ -36,7 +36,7 @@ int main()
 
         try
         {
-            filesystem::current_path("C://nullbootd/mnt/boot/loader");
+            filesystem::current_path("mnt/boot/loader");
             for(auto const& dir_entry : filesystem::directory_iterator("."))
             {
                 cout << dir_entry.path() << endl;
@@ -57,9 +57,16 @@ int main()
         conf.load();
         conf.update();
         conf.write();
-        cin.get();
 
-        winpartition::unmount(mount_point);
+        try
+        {
+            winpartition::unmount(mount_point);
+        }
+        catch(const exception& e)
+        {
+            cerr << e.what() << endl;
+        }
+        cin.get();
     }
     return 0;
 }
