@@ -16,48 +16,24 @@ int main()
     test::parse_file("../../../../test/loader.conf");
     */
 
+    // Find /loader folder in EFI partition (OS specific)
+    string mount_point;
     if(system_os == OS::windows)
     {
-        vector<string> partitions = winpartition::get_partitions();
-        string efi_partition_guid;
-        for(int i = 0; i < partitions.size(); i++)
-        {
-            if(winpartition::is_efi(partitions.at(i)))
-            {
-                // TODO: plan for multiple FAT32 partitons
-                cout << "EFI GUID: " << partitions.at(i) << endl;
-                efi_partition_guid = partitions.at(i);
-                break;
-            }
-        }
+        mount_point = winpartition::find_and_mount_efi();
+    }
 
-        filesystem::current_path(".."); // cd up out of bin to install folder
-        string mount_point = winpartition::mount(efi_partition_guid);
+    Global_Config conf = Global_Config("loader.conf"); // Create config object with pathname
+    conf.load();
 
-        try
-        {
-            filesystem::current_path("mnt/boot/loader");
-            for(auto const& dir_entry : filesystem::directory_iterator("."))
-            {
-                cout << dir_entry.path() << endl;
-            }
-        }
-        catch(const std::exception& e)
-        {
-            std::cerr << e.what() << endl << endl;
-            std::cerr << "Nullbootd only works with systemd-boot. Either you don't have systemd-boot" << endl
-                << "or your bootloader is misconfigured. Nullbootd has terminated." << endl;
-            winpartition::unmount(mount_point);
-            cin.get();
-            return 1;
-        }
+    // TODO: Make update function interactive
+    conf.update();
 
-        Global_Config conf = Global_Config("loader.conf");
+    conf.write();
 
-        conf.load();
-        conf.update();
-        conf.write();
-
+    // Unmount partition when done
+    if(system_os == OS::windows)
+    {
         try
         {
             winpartition::unmount(mount_point);

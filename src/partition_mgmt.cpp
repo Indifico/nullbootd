@@ -9,7 +9,7 @@
 using namespace std;
 
 // Windows API Calls - Partially AI Generated :// i8win32
-string winpartition::wchar_t_to_ansi(wchar_t* wideStr)
+string winpartition::internal::wchar_t_to_ansi(wchar_t* wideStr)
 {
     int sizeNeeded = WideCharToMultiByte(CP_ACP, 0, wideStr, -1, NULL, 0, NULL, NULL);
 
@@ -19,7 +19,7 @@ string winpartition::wchar_t_to_ansi(wchar_t* wideStr)
 
     return ansiStr;
 }
-wstring winpartition::ansi_to_wide(const string& ansiStr) {
+wstring winpartition::internal::ansi_to_wide(const string& ansiStr) {
     if (ansiStr.empty()) return L"";
 
     // 1. Calculate required buffer size
@@ -33,8 +33,7 @@ wstring winpartition::ansi_to_wide(const string& ansiStr) {
 
     return wideStr;
 }
-
-vector<string> winpartition::get_partitions()
+vector<string> winpartition::internal::get_partitions()
 {
     vector<string> ids;
     wchar_t volumeName[MAX_PATH];
@@ -50,8 +49,7 @@ vector<string> winpartition::get_partitions()
 
     return ids;
 }
-
-bool winpartition::is_efi(string guid)
+bool winpartition::internal::is_efi(string guid)
 {
     wstring partition_path = ansi_to_wide(guid);
 
@@ -74,8 +72,7 @@ bool winpartition::is_efi(string guid)
    }
     return false;
 }
-
-string winpartition::mount(std::string guid)
+string winpartition::internal::mount(std::string guid)
 {
     filesystem::path current_dir = filesystem::current_path();
     string work_dir = current_dir.string();
@@ -94,6 +91,43 @@ string winpartition::mount(std::string guid)
    return mount_point_str;
 }
 
+string winpartition::find_and_mount_efi()
+{
+    vector<string> partitions = winpartition::internal::get_partitions();
+    string efi_partition_guid;
+
+    // Find EFI partition(s)
+    for(int i = 0; i < partitions.size(); i++)
+    {
+        if(winpartition::internal::is_efi(partitions.at(i)))
+        {
+            // TODO: plan for multiple FAT32 partitons
+            cout << "EFI GUID: " << partitions.at(i) << endl;
+            efi_partition_guid = partitions.at(i);
+            break;
+        }
+    }
+
+    filesystem::current_path(".."); // cd up out of bin to install folder
+
+    //mount EFI partition and get path to mounted partition as string
+    string mount_point_str = winpartition::internal::mount(efi_partition_guid); 
+
+    try
+    {
+        filesystem::current_path("mnt/boot/loader");
+    }
+    catch(const std::exception& e)
+    {
+        std::cerr << e.what() << endl << endl;
+        std::cerr << "Nullbootd only works with systemd-boot. Either you don't have systemd-boot" << endl
+            << "or your bootloader is misconfigured. Nullbootd has terminated." << endl;
+        winpartition::unmount(mount_point_str);
+        cin.get();
+        //return 1;
+    }
+    return mount_point_str;
+}
 void winpartition::unmount(std::string mount_point)
 {
     const char* mountptr = mount_point.c_str();
