@@ -277,7 +277,7 @@ void Global_Config::unload()
 }
 void Global_Config::write()
 {
-    ofstream conf_out("loader.conf");
+    ofstream conf_out("loader.conf", std::ios::binary);
     try
     {
         if(conf_out.is_open())
